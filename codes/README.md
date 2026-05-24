@@ -16,6 +16,7 @@ codes_for_phe_carbon_growth/
 ├── codes/
 │   ├── README.md
 │   ├── tree_ring_data_processing.R
+│   ├── rwi_gpp_lag_correlation.m
 │   ├── gpp_growth_msd_lag_analysis.m
 │   ├── cmip6_trendy_gpp_phenology_extraction.R
 │   ├── sem_analysis.R
@@ -31,29 +32,17 @@ codes_for_phe_carbon_growth/
 | Script | Main purpose | Main outputs |
 |---|---|---|
 | `tree_ring_data_processing.R` | Processes raw ITRDB tree-ring width files, detrends individual series, constructs site-level ring-width index chronologies, calculates EPS, and exports chronology tables. | RWI chronology tables, EPS table, processing log, and session information. |
+| `rwi_gpp_lag_correlation_and_mapping.m` | Calculates site-level lagged Pearson correlations between RWI and 0–12-month lagged accumulated GPP, estimates SOS trends at tree-ring sites, and optionally maps site-level results to a 0.05° grid. | Site-level RWI-GPP lag-correlation table, filtered table, and optional GeoTIFF maps of maximum correlation, optimal lag, and SOS trend. |
 | `gpp_growth_msd_lag_analysis.m` | Calculates lagged mean squared deviation between GPP and tree-growth proxies for site-level RWI and gridded aboveground biomass. It also performs the first-vs-last 10-year split-period analysis. | Site-level MSD/lag CSV files, gridded MSD/lag GeoTIFFs, and split-period change table. |
-| `cmip6_trendy_gpp_phenology_extraction.R` | Extracts modeled GPP-based start-of-season and end-of-season metrics from CMIP6/TRENDY monthly GPP fields using `phenofit`. | Annual SOS and EOS GeoTIFF stacks for each model. |
-| `sem_analysis.R` | Performs piecewise structural equation modeling for biome-specific pathways linking SOS trend changes to changes in GPP-growth coupling. | Standardized path coefficients, R² values, d-separation tests, Fisher's C statistics, and diagnostic plots. |
+| `cmip6_trendy_gpp_phenology_extraction.R` | Extracts modeled GPP-based start-of-season and end-of-season metrics from CMIP6 and TRENDY monthly GPP fields using `phenofit`. | Annual SOS and EOS GeoTIFF stacks for each model. |
+| `structural_equation_modeling_analysis.R` | Performs piecewise structural equation modeling for biome-specific pathways linking SOS trend changes to changes in GPP-growth coupling. | Standardized path coefficients, R² values, d-separation tests, Fisher's C statistics, and diagnostic plots. |
 | `xgboost_shap_analysis.py` | Fits XGBoost regression models and calculates SHAP values to assess the relative importance of phenological, climatic, and edaphic predictors. | Model performance, grid-search results, selected hyperparameters, SHAP feature importance, and diagnostic figures. |
 
 ## Selected processed data
 
-A small set of processed data files is provided in the adjacent `../source_data/` folder for reviewer inspection. These files are intended to show representative data formats used by the scripts. They are not a complete raw-data archive. The complete data sources are described in the manuscript Data Availability statement.
-
-Included files:
-
-- `ITRDB_v8.0_1982_2018_10years_30N.csv`: processed site-year tree-ring chronology data derived from ITRDB v8.0 for northern mid- and high-latitude sites.
-- `sos_trend_cmip6_trendy_datasets.zip`: selected model-specific GeoTIFF rasters of GPP-derived SOS trends from CMIP6 and TRENDY datasets.
+The adjacent `../source_data/` folder contains selected processed files for reviewer inspection and to illustrate representative input formats. These files are not a complete raw-data archive. Complete data sources are described in the manuscript Data Availability statement.
 
 Please see `../source_data/README_source_data.md` for file-level descriptions and variable information.
-
-## Recent code updates
-
-The MATLAB script `gpp_growth_msd_lag_analysis.m` has been revised to improve reviewer inspection:
-
-1. SOS GeoTIFF stacks are read with `readgeoraster()` instead of `imread()`, reducing the risk that annual raster layers are misread as ordinary image channels.
-2. The split-period analysis compares the first 10 available records and last 10 available records within the target analysis period, matching the first-vs-last 10-year comparison described in the manuscript.
-3. The computationally intensive gridded AGB-GPP analysis is disabled by default. To run the full gridded analysis, set `run_agb_grid_msd = true` in the MATLAB script.
 
 ## Software requirements
 
@@ -99,7 +88,7 @@ The MATLAB workflow requires standard MATLAB functions plus:
 - Statistics and Machine Learning Toolbox
 - Mapping Toolbox
 
-The revised MATLAB script uses `readgeoraster`, `georasterref`, `geotiffwrite`, `regress`, `detrend`, `corrcoef`, and `polyfit`.
+The MATLAB scripts use functions including `readgeoraster`, `georasterref`, `geotiffwrite`, `regress`, `detrend`, `corr`, `corrcoef`, and `polyfit`.
 
 ## Input data and path settings
 
@@ -120,29 +109,24 @@ A typical workflow is:
 
 ```text
 1. tree_ring_data_processing.R
-2. gpp_growth_msd_lag_analysis.m
-3. cmip6_trendy_gpp_phenology_extraction.R
-4. sem_analysis.R
-5. xgboost_shap_analysis.py
+2. rwi_gpp_lag_correlation_and_mapping.m
+3. gpp_growth_msd_lag_analysis.m
+4. cmip6_trendy_gpp_phenology_extraction.R
+5. structural_equation_modeling_analysis.R
+6. xgboost_shap_analysis.py
 ```
 
 The exact order may vary depending on which processed intermediate datasets are already available.
 
 ## Notes on computational cost
 
-The gridded AGB-GPP MSD analysis in `gpp_growth_msd_lag_analysis.m` can be computationally intensive because it loops through raster cells and evaluates multiple lag windows. For rapid inspection, this component is disabled by default:
+The gridded AGB-GPP MSD analysis in `gpp_growth_msd_lag_analysis.m` can be computationally intensive because it loops through raster cells and evaluates multiple lag windows. For rapid inspection, the script allows this component to be disabled by setting:
 
 ```matlab
 run_agb_grid_msd = false;
 ```
 
-To run the full gridded analysis, change it to:
-
-```matlab
-run_agb_grid_msd = true;
-```
-
-The site-level RWI-GPP analysis and split-period analysis are substantially lighter and are generally more suitable for first-pass inspection.
+The site-level RWI-GPP analyses are substantially lighter and are generally more suitable for first-pass inspection.
 
 ## Workflow notes
 
