@@ -1,2 +1,1 @@
-# codes_for_phe_carbon_growth
-The supplementary code for "Advancing spring phenology weakens the coupling between carbon assimilation and tree growth across the Northern Hemisphere"
+The source data and code for "The carbon assimilation–tree growth relationship is stronger in anomalously early springs but weaker where springs advance faster"
